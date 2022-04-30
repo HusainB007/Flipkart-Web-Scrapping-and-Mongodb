@@ -1,0 +1,172 @@
+import pandas as pd
+import numpy as np
+from bs4 import BeautifulSoup as soup
+from urllib.request import urlopen
+
+
+
+urls=[]
+for var in range(1,16):
+    url=["https://www.flipkart.com/search?q=iphone&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off&as-pos=1&as-type=HISTORY&page=%i"%(var)]
+    urls.append(url[0])
+    
+    
+
+urls
+
+def connect(url):
+    uClient=urlopen(url)
+    page_html=uClient.read()
+    uClient.close()
+    
+    page_soup=soup(page_html,"html.parser")
+    
+    container=page_soup.find_all("div",{"class":"_2kHMtA"})
+    
+    return container
+
+con=connect(urls[0])
+print(soup.prettify(con[1]))
+
+con_urls=connect(urls[0])
+
+for i in range(0,15):
+    con=connect(urls[0])
+    for container in con:
+        prod_name=container.div.img['alt']
+        print(prod_name)
+        
+    
+
+for container in con:
+    
+    sprice=co.findAll("div",{"class":"_30jeq3 _1_WHN1"})
+    aprice=co.findAll("div",{"class":"_3I9_wc _27UcVY"})
+    rating=co.findAll("div",{"class":"_3LWZlK"})
+    nrating=co.findAll("span",{"class":"_2_R_DZ"})
+    offer=co.findAll("div",{"class":"_3Ay6Sb"}) 
+    
+    print(offer)
+    
+    
+    
+#     for co in container:
+#     sprice=co.findAll("div",{"class":"_30jeq3 _1_WHN1"})
+#     print(sprice[0].text)
+
+def dataframe(containers):
+    data={"Product name":[], "Sales price":[], "actual price":[] ,"ratings":[], "Person ratings":[], "offers":[]}
+    for i in range(0,15):
+        con=connect(containers[i])
+        for container in con:
+            prod_name=container.div.img['alt']
+            data["Product name"].append(prod_name)
+            
+            sprice=co.findAll("div",{"class":"_30jeq3 _1_WHN1"})
+            spricetext=(sprice[0].text)
+            data["Sales price"].append(spricetext)
+            
+             
+            try:
+                
+                aprice=co.findAll("div",{"class":"_3I9_wc _27UcVY"})
+                a_p=aprice[0].text
+                data["actual price"].append(a_p)
+            except IndexError:
+                print("Same as Sales Price")
+                data["actual price"].append("Same Price")
+                
+            try:
+                
+                rating=co.findAll("div",{"class":"_3LWZlK"})
+                r_p=rating[0].text
+                data["ratings"].append(r_p)
+            except IndexError:
+               
+                data["ratings"].append("no rating")
+                
+                
+            try:
+                
+                nrating=co.findAll("span",{"class":"_2_R_DZ"})
+                nr_p=nrating[0].text
+                data["Person ratings"].append(nr_p)
+            except IndexError:
+               
+                data["Person ratings"].append("no rating")
+                     
+            try:
+                
+                offer=co.findAll("div",{"class":"_3Ay6Sb"}) 
+                o_p=offer[0].text
+                data["offers"].append(o_p)
+            except IndexError:
+               
+                data["offers"].append("no offer")
+                              
+                
+        print("done",i)
+                    
+                
+    return data
+            
+
+dataset=dataframe(urls)
+
+dataset
+
+df=pd.DataFrame(dataset)
+
+df
+
+
+df.to_csv("iphone.csv")
+
+df.dtypes
+
+
+df["ratings"]=pd.to_numeric(df["ratings"])
+
+df.dtypes
+
+df[["No. of  ratings","No. of Reviews"]]=df["Person ratings"].str.split("&",1,expand=True)
+
+df["No. of  ratings"]=df["No. of  ratings"].str.split(" ").str[0]
+df["No. of Reviews"]=df["No. of Reviews"].str.split(" ").str[0]
+
+df=df.drop("Person ratings",axis=1)
+
+df.to_csv("iphone.csv")
+
+!pip install pymongo
+
+import pymongo
+
+def dftomonogdb(dataset):
+    import pymongo
+    connect = pymongo.MongoClient(host="localhost",port=27017)
+    database = connect["Husain_proj_flipkartDB"]
+    collection = database["iphone"]
+
+
+    for (row,rs) in dataset.iterrows():
+        #print(row)
+        #r = rs
+        Product_Name = rs[0]
+        Sale_Price = rs[1]
+        Actual_Price = rs[2]
+        Ratting = rs[3]
+        Offer = rs[4]
+        n_ratting = rs[5]
+        n_review = rs[6]
+        d = {"Product_Name":Product_Name,"Ratting":Ratting,"Sale_Price":Sale_Price,
+             "Actual_Price":Actual_Price,"Offer":Offer,"No of Ratting":n_ratting,"No of Reviews":n_review}
+        
+        collection.insert_one(d)
+        
+        
+        
+    print("Done")
+    
+
+dftomonogdb(df)
